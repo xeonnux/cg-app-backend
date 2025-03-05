@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import { User } from '../models/user';
+import bcrypt from "bcryptjs";
 import authenticateJWT from '../middleware/authenticateJWT'; // JWT authentication middleware
 
 const router = express.Router();
@@ -43,9 +44,14 @@ router.put('/profile', authenticateJWT, async (req: Request, res: Response) => {
 });
 
 // Create a User
-router.post('/create', async (req: Request, res: Response): Promise<void> => {
+router.post('/create', authenticateJWT, async (req: Request, res: Response): Promise<void> => {
   const data = req.body;
   const { email } = data;
+
+  //encrypt password
+  const salt = await bcrypt.genSalt(10);
+  data.password = await bcrypt.hash(data.password, salt);
+
   try {
     const existingUser = await User.findOne({ where: { email } });
     if (existingUser) res.status(400).json({ message: 'User already exists' });
